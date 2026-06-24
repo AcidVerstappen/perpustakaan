@@ -8,6 +8,10 @@
         ['route' => 'fines.index', 'icon' => 'bi-cash-coin', 'label' => 'Denda', 'pattern' => 'fines.*'],
     ];
 
+    if (!$isAdmin) {
+        $menuItems[] = ['route' => 'booking.cart', 'icon' => 'bi-cart', 'label' => 'Keranjang Booking', 'pattern' => 'booking.cart'];
+    }
+
     if ($isAdmin) {
         $adminMenus = [
             ['route' => 'categories.index', 'icon' => 'bi-tags', 'label' => 'Kategori', 'pattern' => 'categories.*'],
@@ -15,6 +19,7 @@
             ['route' => 'members.index', 'icon' => 'bi-people', 'label' => 'Anggota', 'pattern' => 'members.*'],
             ['route' => 'returns.index', 'icon' => 'bi-box-arrow-in-left', 'label' => 'Pengembalian', 'pattern' => 'returns.*'],
             ['route' => 'reports.index', 'icon' => 'bi-file-earmark-bar-graph', 'label' => 'Laporan', 'pattern' => 'reports.*'],
+            ['route' => 'qr-scan.index', 'icon' => 'bi-qr-code-scan', 'label' => 'Scan QR', 'pattern' => 'qr-scan.*'],
         ];
         $menuItems = array_merge(
             array_slice($menuItems, 0, 2),

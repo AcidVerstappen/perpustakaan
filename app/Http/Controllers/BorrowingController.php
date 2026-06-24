@@ -23,40 +23,20 @@ class BorrowingController extends Controller
 
         $search = $request->string('search')->trim();
         $status = $request->string('status')->toString();
+        $user = $request->user();
 
-        $query = Borrowing::query()
-            ->with(['member', 'processor', 'details.book'])
-            ->withCount('details')
-            ->latest();
+        $borrowings = $this->borrowingService->getBorrowings($search, $status, $user);
 
         $noMember = false;
-        if ($request->user()->hasRole('Siswa')) {
-            $member = $request->user()->member;
-            if (! $member) {
-                $noMember = true;
-                $query->whereRaw('0 = 1');
-            } else {
-                $query->where('member_id', $member->id);
-            }
+        if ($user->hasRole('Siswa')) {
+            $noMember = !$user->member;
         }
-
-        $query->when($search->isNotEmpty(), function ($q) use ($search) {
-            $q->where(function ($inner) use ($search) {
-                $inner->where('kode_pinjam', 'like', "%{$search}%")
-                    ->orWhereHas('member', fn ($m) => $m->where('nama', 'like', "%{$search}%")
-                        ->orWhere('nis', 'like', "%{$search}%"));
-            });
-        });
-
-        $query->when($status !== '', fn ($q) => $q->where('status', $status));
-
-        $borrowings = $query->paginate(10)->withQueryString();
 
         return view('borrowings.index', [
             'borrowings' => $borrowings,
             'search' => $search,
             'status' => $status,
-            'isAdmin' => $request->user()->isAdminLibrary(),
+            'isAdmin' => $user->isAdminLibrary(),
             'noMember' => $noMember,
         ]);
     }
@@ -96,6 +76,20 @@ class BorrowingController extends Controller
         ]);
     }
 
+    public function qr(Borrowing $borrowing)
+    {
+        $this->authorizeBorrowingAccess($borrowing);
+
+        // Generate default base64 data URI
+        $qrCodeDataUri = (new \chillerlan\QRCode\QRCode)->render($borrowing->kode_pinjam);
+        
+        // Extract base64 string and decode to raw SVG
+        $base64 = substr($qrCodeDataUri, strpos($qrCodeDataUri, ',') + 1);
+        $rawSvg = base64_decode($base64);
+
+        return response($rawSvg, 200)->header('Content-Type', 'image/svg+xml');
+    }
+
     public function approve(Borrowing $borrowing): RedirectResponse
     {
         $this->borrowingService->approve($borrowing, auth()->user());
@@ -112,16 +106,14 @@ class BorrowingController extends Controller
 
     public function destroy(Borrowing $borrowing): RedirectResponse
     {
-        if ($borrowing->status !== 'diajukan') {
-            return back()->with('error', 'Hanya peminjaman berstatus diajukan yang dapat dihapus.');
+        try {
+            $this->borrowingService->delete($borrowing);
+            return redirect()
+                ->route('borrowings.index')
+                ->with('success', 'Peminjaman berhasil dihapus.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        $borrowing->details()->delete();
-        $borrowing->delete();
-
-        return redirect()
-            ->route('borrowings.index')
-            ->with('success', 'Peminjaman berhasil dihapus.');
     }
 
     protected function authorizeBorrowingAccess(Borrowing $borrowing): void

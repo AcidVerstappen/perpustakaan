@@ -14,22 +14,14 @@ use Illuminate\View\View;
 
 class MemberController extends Controller
 {
+    public function __construct(protected \App\Services\MemberService $memberService)
+    {
+    }
+
     public function index(Request $request): View
     {
         $search = $request->string('search')->trim();
-
-        $members = Member::query()
-            ->with('user')
-            ->when($search->isNotEmpty(), function ($q) use ($search) {
-                $q->where(function ($query) use ($search) {
-                    $query->where('nis', 'like', "%{$search}%")
-                        ->orWhere('nama', 'like', "%{$search}%")
-                        ->orWhere('kelas', 'like', "%{$search}%");
-                });
-            })
-            ->orderBy('nama')
-            ->paginate(10)
-            ->withQueryString();
+        $members = $this->memberService->getAllMembers($search);
 
         return view('members.index', compact('members', 'search'));
     }
@@ -41,26 +33,14 @@ class MemberController extends Controller
 
     public function store(MemberRequest $request): RedirectResponse
     {
-        DB::transaction(function () use ($request) {
-            $data = $request->safe()->except(['buat_akun', 'email', 'password', 'password_confirmation', 'foto']);
+        $data = $request->safe()->except(['buat_akun', 'email', 'password', 'password_confirmation', 'foto']);
+        $accountData = $request->only(['email', 'password']);
+        
+        if ($request->hasFile('foto')) {
+            $data['foto'] = $request->file('foto');
+        }
 
-            if ($request->hasFile('foto')) {
-                $data['foto'] = $request->file('foto')->store('members', 'public');
-            }
-
-            if ($request->boolean('buat_akun')) {
-                $user = User::create([
-                    'name' => $request->nama,
-                    'email' => $request->email,
-                    'password' => Hash::make($request->password),
-                    'email_verified_at' => now(),
-                ]);
-                $user->assignRole('Siswa');
-                $data['user_id'] = $user->id;
-            }
-
-            Member::create($data);
-        });
+        $this->memberService->createMember($data, $request->boolean('buat_akun'), $accountData);
 
         return redirect()
             ->route('members.index')
@@ -76,37 +56,14 @@ class MemberController extends Controller
 
     public function update(MemberRequest $request, Member $member): RedirectResponse
     {
-        DB::transaction(function () use ($request, $member) {
-            $data = $request->safe()->except(['buat_akun', 'email', 'password', 'password_confirmation', 'foto']);
+        $data = $request->safe()->except(['buat_akun', 'email', 'password', 'password_confirmation', 'foto']);
+        $accountData = $request->only(['email', 'password']);
 
-            if ($request->hasFile('foto')) {
-                if ($member->foto) {
-                    Storage::disk('public')->delete($member->foto);
-                }
-                $data['foto'] = $request->file('foto')->store('members', 'public');
-            }
+        if ($request->hasFile('foto')) {
+            $data['foto'] = $request->file('foto');
+        }
 
-            if ($request->boolean('buat_akun') && ! $member->user_id) {
-                $user = User::create([
-                    'name' => $request->nama,
-                    'email' => $request->email,
-                    'password' => Hash::make($request->password),
-                    'email_verified_at' => now(),
-                ]);
-                $user->assignRole('Siswa');
-                $data['user_id'] = $user->id;
-            } elseif ($member->user && $request->filled('email')) {
-                $member->user->update([
-                    'name' => $request->nama,
-                    'email' => $request->email,
-                ]);
-                if ($request->filled('password')) {
-                    $member->user->update(['password' => Hash::make($request->password)]);
-                }
-            }
-
-            $member->update($data);
-        });
+        $this->memberService->updateMember($member, $data, $request->boolean('buat_akun'), $accountData);
 
         return redirect()
             ->route('members.index')
@@ -115,18 +72,7 @@ class MemberController extends Controller
 
     public function destroy(Member $member): RedirectResponse
     {
-        DB::transaction(function () use ($member) {
-            if ($member->foto) {
-                Storage::disk('public')->delete($member->foto);
-            }
-
-            $user = $member->user;
-            $member->delete();
-
-            if ($user && $user->email !== 'siswa@perpus.test') {
-                $user->delete();
-            }
-        });
+        $this->memberService->deleteMember($member);
 
         return redirect()
             ->route('members.index')

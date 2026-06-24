@@ -19,6 +19,7 @@ class Fine extends Model
     {
         return [
             'tanggal_bayar' => 'date',
+            'status_bayar' => \App\Enums\FineStatus::class,
         ];
     }
 
@@ -34,6 +35,16 @@ class Fine extends Model
 
     public function isPaid(): bool
     {
-        return $this->status_bayar === 'lunas';
+        return $this->status_bayar === \App\Enums\FineStatus::Lunas;
+    }
+
+    public function statusLabel(): string
+    {
+        return $this->status_bayar->label();
+    }
+
+    public function statusBadgeClass(): string
+    {
+        return $this->status_bayar->badgeClass();
     }
 }

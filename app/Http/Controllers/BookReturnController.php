@@ -23,33 +23,9 @@ class BookReturnController extends Controller
 
         $search = $request->string('search')->trim();
 
-        $activeBorrowings = Borrowing::query()
-            ->with(['member', 'details.book', 'returnLogs'])
-            ->whereIn('status', ['dipinjam', 'terlambat'])
-            ->whereHas('details', function ($q) {
-                $q->whereColumn('qty_dikembalikan', '<', 'qty');
-            })
-            ->when($search->isNotEmpty(), function ($q) use ($search) {
-                $q->where(function ($inner) use ($search) {
-                    $inner->where('kode_pinjam', 'like', "%{$search}%")
-                        ->orWhereHas('member', fn ($m) => $m->where('nama', 'like', "%{$search}%"));
-                });
-            })
-            ->orderBy('tanggal_jatuh_tempo')
-            ->paginate(10, ['*'], 'active_page')
-            ->withQueryString();
-
-        $returnLogs = \App\Models\ReturnLog::query()
-            ->with(['borrowing.member', 'receiver'])
-            ->latest()
-            ->paginate(10, ['*'], 'history_page')
-            ->withQueryString();
-
-        $completedReturns = \App\Models\BookReturn::query()
-            ->with(['borrowing.member', 'receiver'])
-            ->latest()
-            ->paginate(10, ['*'], 'completed_page')
-            ->withQueryString();
+        $activeBorrowings = $this->returnService->getActiveBorrowings($search);
+        $returnLogs = $this->returnService->getReturnLogs();
+        $completedReturns = $this->returnService->getCompletedReturns();
 
         return view('returns.index', compact('activeBorrowings', 'returnLogs', 'completedReturns', 'search'));
     }

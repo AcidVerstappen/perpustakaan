@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\BorrowingStatus;
 use App\Models\Book;
 use App\Models\Borrowing;
 use App\Models\Member;
@@ -12,6 +13,15 @@ use Illuminate\Validation\ValidationException;
 
 class BorrowingService
 {
+    public function __construct(protected \App\Repositories\Interfaces\BorrowingRepositoryInterface $borrowingRepository)
+    {
+    }
+
+    public function getBorrowings(string $search = '', string $status = '', ?User $user = null)
+    {
+        return $this->borrowingRepository->getAll($search, $status, $user);
+    }
+
     public function generateKodePinjam(): string
     {
         $prefix = 'PJ-'.now()->format('Ymd');
@@ -38,7 +48,8 @@ class BorrowingService
                 'processed_by' => $processor?->id,
                 'tanggal_pinjam' => $today,
                 'tanggal_jatuh_tempo' => $today->copy()->addDays($loanDays),
-                'status' => 'diajukan',
+                'tanggal_batas_ambil' => $today->copy()->addDay(),
+                'status' => BorrowingStatus::Diajukan,
             ]);
 
             foreach ($items as $item) {
@@ -48,6 +59,12 @@ class BorrowingService
                 ]);
             }
 
+            \Illuminate\Support\Facades\Log::info('Borrowing created', [
+                'borrowing_id' => $borrowing->id,
+                'kode_pinjam' => $borrowing->kode_pinjam,
+                'member_id' => $member->id,
+            ]);
+
             return $borrowing->load(['details.book', 'member']);
         });
     }
@@ -55,7 +72,7 @@ class BorrowingService
     public function approve(Borrowing $borrowing, User $processor): Borrowing
     {
         return DB::transaction(function () use ($borrowing, $processor) {
-            if ($borrowing->status !== 'diajukan') {
+            if ($borrowing->status !== BorrowingStatus::Diajukan) {
                 throw ValidationException::withMessages([
                     'status' => 'Hanya peminjaman berstatus diajukan yang dapat disetujui.',
                 ]);
@@ -80,10 +97,15 @@ class BorrowingService
             $loanDays = config('perpustakaan.hari_peminjaman', 7);
 
             $borrowing->update([
-                'status' => 'dipinjam',
+                'status' => BorrowingStatus::Dipinjam,
                 'processed_by' => $processor->id,
                 'tanggal_pinjam' => $today,
                 'tanggal_jatuh_tempo' => $today->copy()->addDays($loanDays),
+            ]);
+
+            \Illuminate\Support\Facades\Log::info('Borrowing approved', [
+                'borrowing_id' => $borrowing->id,
+                'processed_by' => $processor->id,
             ]);
 
             return $borrowing->fresh(['details.book', 'member', 'processor']);
@@ -92,14 +114,19 @@ class BorrowingService
 
     public function reject(Borrowing $borrowing, User $processor): Borrowing
     {
-        if ($borrowing->status !== 'diajukan') {
+        if ($borrowing->status !== BorrowingStatus::Diajukan) {
             throw ValidationException::withMessages([
                 'status' => 'Hanya peminjaman berstatus diajukan yang dapat ditolak.',
             ]);
         }
 
         $borrowing->update([
-            'status' => 'ditolak',
+            'status' => BorrowingStatus::Ditolak,
+            'processed_by' => $processor->id,
+        ]);
+
+        \Illuminate\Support\Facades\Log::info('Borrowing rejected', [
+            'borrowing_id' => $borrowing->id,
             'processed_by' => $processor->id,
         ]);
 
@@ -109,9 +136,9 @@ class BorrowingService
     public function markOverdueBorrowings(): int
     {
         return Borrowing::query()
-            ->where('status', 'dipinjam')
+            ->where('status', BorrowingStatus::Dipinjam)
             ->whereDate('tanggal_jatuh_tempo', '<', Carbon::today())
-            ->update(['status' => 'terlambat']);
+            ->update(['status' => BorrowingStatus::Terlambat]);
     }
 
     protected function validateStockForItems(array $items, bool $lock): void
@@ -132,5 +159,19 @@ class BorrowingService
                 ]);
             }
         }
+    }
+
+    public function delete(Borrowing $borrowing): bool
+    {
+        return DB::transaction(function () use ($borrowing) {
+            if ($borrowing->status !== BorrowingStatus::Diajukan) {
+                throw ValidationException::withMessages([
+                    'status' => 'Hanya peminjaman berstatus diajukan yang dapat dihapus.',
+                ]);
+            }
+
+            $borrowing->details()->delete();
+            return $borrowing->delete();
+        });
     }
 }

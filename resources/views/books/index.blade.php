@@ -70,6 +70,9 @@
                                         <a href="{{ route('books.edit', $book) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </a>
+                                        <a href="{{ route('books.qr', $book) }}" class="btn btn-sm btn-outline-dark" title="Tampilkan QR" target="_blank">
+                                            <i class="bi bi-qr-code"></i>
+                                        </a>
                                         <form action="{{ route('books.destroy', $book) }}" method="POST" class="d-inline"
                                               onsubmit="return confirm('Hapus buku ini?')">
                                             @csrf
@@ -78,6 +81,15 @@
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
+                                    @else
+                                        @if($book->isAvailable())
+                                        <form action="{{ route('booking.cart.add', $book) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Booking Buku">
+                                                <i class="bi bi-cart-plus"></i> Booking
+                                            </button>
+                                        </form>
+                                        @endif
                                     @endif
                                 </td>
                             </tr>

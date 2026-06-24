@@ -9,46 +9,30 @@ use Illuminate\View\View;
 
 class FineController extends Controller
 {
+    public function __construct(protected \App\Services\FineService $fineService)
+    {
+    }
+
     public function index(Request $request): View
     {
         $search = $request->string('search')->trim();
         $status = $request->string('status')->toString();
+        $user = $request->user();
 
-        $query = Fine::query()
-            ->with(['member', 'borrowing'])
-            ->latest();
+        $fines = $this->fineService->getFines($search, $status, $user);
 
         $noMember = false;
-        if ($request->user()->hasRole('Siswa')) {
-            $member = $request->user()->member;
-            if (! $member) {
-                $noMember = true;
-                $query->whereRaw('0 = 1');
-            } else {
-                $query->where('member_id', $member->id);
-            }
+        if ($user->hasRole('Siswa')) {
+            $noMember = !$user->member;
         }
 
-        $query->when($search->isNotEmpty(), function ($q) use ($search) {
-            $q->whereHas('member', fn ($m) => $m->where('nama', 'like', "%{$search}%")
-                ->orWhere('nis', 'like', "%{$search}%"));
-        });
-
-        $query->when($status !== '', fn ($q) => $q->where('status_bayar', $status));
-
-        $fines = $query->paginate(10)->withQueryString();
-
-        $totalQuery = Fine::query()->where('status_bayar', 'belum_lunas');
-        if ($request->user()->hasRole('Siswa') && $request->user()->member) {
-            $totalQuery->where('member_id', $request->user()->member->id);
-        }
-        $totalBelumLunas = $totalQuery->sum('jumlah_denda');
+        $totalBelumLunas = $this->fineService->getTotalBelumLunas($user);
 
         return view('fines.index', [
             'fines' => $fines,
             'search' => $search,
             'status' => $status,
-            'isAdmin' => $request->user()->isAdminLibrary(),
+            'isAdmin' => $user->isAdminLibrary(),
             'noMember' => $noMember,
             'totalBelumLunas' => $totalBelumLunas,
         ]);
@@ -68,20 +52,12 @@ class FineController extends Controller
 
     public function pay(Fine $fine): RedirectResponse
     {
-        if (! auth()->user()->isAdminLibrary()) {
-            abort(403);
+        try {
+            $this->fineService->pay($fine, auth()->user());
+            return back()->with('success', 'Pembayaran denda berhasil dicatat.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        if ($fine->isPaid()) {
-            return back()->with('error', 'Denda sudah lunas.');
-        }
-
-        $fine->update([
-            'status_bayar' => 'lunas',
-            'tanggal_bayar' => now(),
-        ]);
-
-        return back()->with('success', 'Pembayaran denda berhasil dicatat.');
     }
 
     protected function authorizeFineAccess(Fine $fine): void

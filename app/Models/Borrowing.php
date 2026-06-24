@@ -16,6 +16,7 @@ class Borrowing extends Model
         'tanggal_pinjam',
         'tanggal_jatuh_tempo',
         'status',
+        'tanggal_batas_ambil',
     ];
 
     protected function casts(): array
@@ -23,6 +24,8 @@ class Borrowing extends Model
         return [
             'tanggal_pinjam' => 'date',
             'tanggal_jatuh_tempo' => 'date',
+            'tanggal_batas_ambil' => 'datetime',
+            'status' => \App\Enums\BorrowingStatus::class,
         ];
     }
 
@@ -90,13 +93,13 @@ class Borrowing extends Model
 
     public function isOverdue(): bool
     {
-        return in_array($this->status, ['dipinjam', 'terlambat'], true)
+        return in_array($this->status, [\App\Enums\BorrowingStatus::Dipinjam, \App\Enums\BorrowingStatus::Terlambat], true)
             && $this->tanggal_jatuh_tempo->isPast();
     }
 
     public function canBeReturned(): bool
     {
-        return in_array($this->status, ['dipinjam', 'terlambat'], true)
+        return in_array($this->status, [\App\Enums\BorrowingStatus::Dipinjam, \App\Enums\BorrowingStatus::Terlambat], true)
             && $this->totalSisa() > 0;
     }
 
@@ -106,14 +109,7 @@ class Borrowing extends Model
             return 'Dikembalikan Sebagian';
         }
 
-        return match ($this->status) {
-            'diajukan' => 'Diajukan',
-            'dipinjam' => 'Dipinjam',
-            'terlambat' => 'Terlambat',
-            'selesai' => 'Selesai',
-            'ditolak' => 'Ditolak',
-            default => $this->status,
-        };
+        return $this->status->label();
     }
 
     public function statusBadgeClass(): string
@@ -122,13 +118,6 @@ class Borrowing extends Model
             return 'text-bg-info';
         }
 
-        return match ($this->status) {
-            'diajukan' => 'text-bg-warning',
-            'dipinjam' => 'text-bg-primary',
-            'terlambat' => 'text-bg-danger',
-            'selesai' => 'text-bg-success',
-            'ditolak' => 'text-bg-secondary',
-            default => 'text-bg-secondary',
-        };
+        return $this->status->badgeClass();
     }
 }

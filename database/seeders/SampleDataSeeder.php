@@ -6,77 +6,57 @@ use App\Models\Book;
 use App\Models\Category;
 use App\Models\Shelf;
 use Illuminate\Database\Seeder;
+use Faker\Factory as Faker;
+use Illuminate\Support\Str;
 
 class SampleDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $fiction = Category::firstOrCreate(
-            ['nama_kategori' => 'Fiksi'],
-            ['deskripsi' => 'Buku cerita fiksi dan novel']
-        );
+        $faker = Faker::create('id_ID');
 
-        $science = Category::firstOrCreate(
-            ['nama_kategori' => 'Sains'],
-            ['deskripsi' => 'Buku pengetahuan dan sains']
-        );
+        // Create Categories
+        $categories = ['Fiksi', 'Sains', 'Sejarah', 'Teknologi', 'Sastra', 'Biografi', 'Komik', 'Pendidikan'];
+        $categoryIds = [];
+        foreach ($categories as $cat) {
+            $category = Category::firstOrCreate(
+                ['nama_kategori' => $cat],
+                ['deskripsi' => "Buku kategori $cat"]
+            );
+            $categoryIds[] = $category->id;
+        }
 
-        $rakA = Shelf::firstOrCreate(
-            ['kode_rak' => 'A-01'],
-            ['nama_rak' => 'Rak Fiksi A', 'lokasi' => 'Lantai 1 - Barat']
-        );
+        // Create Shelves
+        $shelves = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $shelf = Shelf::firstOrCreate(
+                ['kode_rak' => "R-0$i"],
+                ['nama_rak' => "Rak Umum 0$i", 'lokasi' => "Lantai 1 - Lorong $i"]
+            );
+            $shelves[] = $shelf->id;
+        }
 
-        $rakB = Shelf::firstOrCreate(
-            ['kode_rak' => 'B-01'],
-            ['nama_rak' => 'Rak Sains B', 'lokasi' => 'Lantai 1 - Timur']
-        );
-
-        $books = [
-            [
-                'kode_buku' => 'BK-001',
-                'isbn' => '9786020321234',
-                'judul' => 'Laskar Pelangi',
-                'category_id' => $fiction->id,
-                'shelf_id' => $rakA->id,
-                'penulis' => 'Andrea Hirata',
-                'penerbit' => 'Bentang Pustaka',
-                'tahun_terbit' => 2005,
-                'jumlah_buku' => 5,
-                'stok_tersedia' => 5,
-                'deskripsi' => 'Novel inspiratif tentang perjuangan siswa di Belitung.',
-            ],
-            [
-                'kode_buku' => 'BK-002',
-                'isbn' => '9789790734567',
-                'judul' => 'Bumi',
-                'category_id' => $fiction->id,
-                'shelf_id' => $rakA->id,
-                'penulis' => 'Tere Liye',
-                'penerbit' => 'Republika',
-                'tahun_terbit' => 2014,
-                'jumlah_buku' => 3,
-                'stok_tersedia' => 2,
-                'deskripsi' => 'Seri novel petualangan dunia paralel.',
-            ],
-            [
-                'kode_buku' => 'BK-003',
-                'isbn' => '9789790798765',
-                'judul' => 'Sapiens: Riwayat Singkat Umat Manusia',
-                'category_id' => $science->id,
-                'shelf_id' => $rakB->id,
-                'penulis' => 'Yuval Noah Harari',
-                'penerbit' => 'Gramedia',
-                'tahun_terbit' => 2017,
-                'jumlah_buku' => 2,
-                'stok_tersedia' => 1,
-                'deskripsi' => 'Buku sejarah evolusi manusia dari perspektif unik.',
-            ],
-        ];
-
-        foreach ($books as $data) {
-            $book = Book::firstOrNew(['kode_buku' => $data['kode_buku']]);
-            $data['slug'] = Book::generateUniqueSlug($data['judul'], $book->id);
-            $book->fill($data);
+        // Create 30 Books
+        for ($i = 1; $i <= 30; $i++) {
+            $judul = rtrim($faker->sentence(rand(2, 5)), '.');
+            $jumlah = rand(2, 10);
+            
+            $book = Book::firstOrNew(['kode_buku' => 'BK-' . str_pad($i, 4, '0', STR_PAD_LEFT)]);
+            
+            $book->fill([
+                'isbn' => $faker->isbn13(),
+                'judul' => $judul,
+                'slug' => Str::slug($judul) . '-' . uniqid(),
+                'category_id' => $faker->randomElement($categoryIds),
+                'shelf_id' => $faker->randomElement($shelves),
+                'penulis' => $faker->name(),
+                'penerbit' => $faker->company(),
+                'tahun_terbit' => rand(2010, 2024),
+                'jumlah_buku' => $jumlah,
+                'stok_tersedia' => $jumlah,
+                'deskripsi' => $faker->paragraph(),
+            ]);
+            
             $book->save();
         }
     }

@@ -67,7 +67,7 @@
                                 <td>{{ $borrowing->details_count }} judul</td>
                                 <td>
                                     <span class="badge {{ $borrowing->statusBadgeClass() }}">{{ $borrowing->statusLabel() }}</span>
-                                    @if ($borrowing->totalSisa() > 0 && in_array($borrowing->status, ['dipinjam', 'terlambat']))
+                                    @if ($borrowing->totalSisa() > 0 && in_array($borrowing->status->value, ['dipinjam', 'terlambat']))
                                         <br><small class="text-warning">Sisa {{ $borrowing->totalSisa() }} eks.</small>
                                     @endif
                                 </td>
@@ -75,7 +75,12 @@
                                     <a href="{{ route('borrowings.show', $borrowing) }}" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    @if ($isAdmin && $borrowing->status === 'diajukan')
+                                    @if ($borrowing->status->value === 'diajukan')
+                                        <button type="button" onclick="showQrModal('{{ $borrowing->kode_pinjam }}', '{{ route('borrowings.qr', $borrowing) }}')" class="btn btn-sm btn-outline-dark" title="Tampilkan QR Booking">
+                                            <i class="bi bi-qr-code"></i>
+                                        </button>
+                                    @endif
+                                    @if ($isAdmin && $borrowing->status->value === 'diajukan')
                                         <form action="{{ route('borrowings.destroy', $borrowing) }}" method="POST" class="d-inline"
                                               onsubmit="return confirm('Hapus peminjaman ini?')">
                                             @csrf @method('DELETE')
@@ -93,4 +98,31 @@
             {{ $borrowings->links() }}
         </div>
     </div>
+
+    <!-- QR Modal -->
+    <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="qrModalLabel">QR Code</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="qrModalImage" src="" alt="QR Code" class="img-fluid border rounded mb-3" style="max-width: 200px;">
+                    <div class="fw-bold text-success fs-5" id="qrModalKode"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
+
+@push('scripts')
+<script>
+    function showQrModal(kode, url) {
+        document.getElementById('qrModalKode').innerText = kode;
+        document.getElementById('qrModalImage').src = url;
+        var myModal = new bootstrap.Modal(document.getElementById('qrModal'));
+        myModal.show();
+    }
+</script>
+@endpush

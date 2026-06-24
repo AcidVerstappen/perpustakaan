@@ -9,6 +9,8 @@ use App\Http\Controllers\FineController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\BookQrController;
+use App\Http\Controllers\BookBookingController;
 use App\Http\Controllers\ShelfController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,10 +58,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('reports/members/pdf', [ReportController::class, 'members'])->name('reports.members');
         Route::get('reports/borrowings/pdf', [ReportController::class, 'borrowings'])->name('reports.borrowings');
         Route::get('reports/fines/pdf', [ReportController::class, 'fines'])->name('reports.fines');
+        Route::get('reports/fines/pdf', [ReportController::class, 'fines'])->name('reports.fines');
+
+        Route::get('books/{book}/qr', [BookQrController::class, 'show'])->name('books.qr');
+
+        Route::get('qr-scan', [\App\Http\Controllers\QrScanController::class, 'index'])->name('qr-scan.index');
+        Route::post('qr-scan', [\App\Http\Controllers\QrScanController::class, 'handle'])->name('qr-scan.handle');
+    });
+
+    Route::middleware(['role:Siswa'])->group(function () {
+        Route::get('booking/cart', [BookBookingController::class, 'cart'])->name('booking.cart');
+        Route::post('booking/cart/add/{book}', [BookBookingController::class, 'add'])->name('booking.cart.add');
+        Route::delete('booking/cart/remove/{book}', [BookBookingController::class, 'remove'])->name('booking.cart.remove');
+        Route::post('booking/checkout', [BookBookingController::class, 'checkout'])->name('booking.checkout');
     });
 
     Route::get('books/{book}', [BookController::class, 'show'])->name('books.show');
     Route::get('borrowings/{borrowing}', [BorrowingController::class, 'show'])->name('borrowings.show');
+    Route::get('borrowings/{borrowing}/qr', [BorrowingController::class, 'qr'])->name('borrowings.qr');
     Route::get('fines/{fine}', [FineController::class, 'show'])->name('fines.show');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

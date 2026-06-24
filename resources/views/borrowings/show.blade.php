@@ -18,15 +18,22 @@
                     <span class="badge {{ $borrowing->statusBadgeClass() }}">{{ $borrowing->statusLabel() }}</span>
                 </div>
                 <div class="card-body">
+                        <div class="text-center mb-4">
+                            <img src="{{ route('borrowings.qr', $borrowing) }}" alt="QR Code" class="img-fluid border rounded" style="max-width: 150px;">
+                            <div class="mt-2 fw-bold text-success">{{ $borrowing->kode_pinjam }}</div>
+                        </div>
                     <table class="table table-sm table-borderless">
                         <tr><th>Anggota</th><td>{{ $borrowing->member->nama }} ({{ $borrowing->member->nis }})</td></tr>
                         <tr><th>Kelas</th><td>{{ $borrowing->member->kelas }}</td></tr>
                         <tr><th>Tgl Pinjam</th><td>{{ $borrowing->tanggal_pinjam->format('d F Y') }}</td></tr>
                         <tr><th>Jatuh Tempo</th><td>{{ $borrowing->tanggal_jatuh_tempo->format('d F Y') }}</td></tr>
+                        @if ($borrowing->tanggal_batas_ambil)
+                            <tr><th>Batas Ambil</th><td><span class="text-danger fw-bold">{{ $borrowing->tanggal_batas_ambil->format('d F Y H:i') }}</span></td></tr>
+                        @endif
                         @if ($borrowing->processor)
                             <tr><th>Diproses oleh</th><td>{{ $borrowing->processor->name }}</td></tr>
                         @endif
-                        @if (in_array($borrowing->status, ['dipinjam', 'terlambat']))
+                        @if (in_array($borrowing->status->value, ['dipinjam', 'terlambat']))
                             <tr>
                                 <th>Progress Kembali</th>
                                 <td>
@@ -43,7 +50,7 @@
                         @endif
                     </table>
 
-                    @if ($isAdmin && $borrowing->status === 'diajukan')
+                    @if ($isAdmin && $borrowing->status->value === 'diajukan')
                         <div class="d-flex gap-2 mt-3">
                             <form action="{{ route('borrowings.approve', $borrowing) }}" method="POST">
                                 @csrf

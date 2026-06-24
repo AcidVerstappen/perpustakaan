@@ -13,24 +13,14 @@ use Illuminate\View\View;
 
 class BookController extends Controller
 {
+    public function __construct(protected \App\Services\BookService $bookService)
+    {
+    }
+
     public function index(Request $request): View
     {
         $search = $request->string('search')->trim();
-
-        $books = Book::query()
-            ->with(['category', 'shelf'])
-            ->when($search->isNotEmpty(), function ($q) use ($search) {
-                $q->where(function ($query) use ($search) {
-                    $query->where('judul', 'like', "%{$search}%")
-                        ->orWhere('kode_buku', 'like', "%{$search}%")
-                        ->orWhere('penulis', 'like', "%{$search}%")
-                        ->orWhere('isbn', 'like', "%{$search}%");
-                });
-            })
-            ->orderByDesc('created_at')
-            ->paginate(10)
-            ->withQueryString();
-
+        $books = $this->bookService->getAllBooks($search);
         $isAdmin = $request->user()->hasAnyRole(['Super Admin', 'Admin Perpustakaan']);
 
         return view('books.index', compact('books', 'search', 'isAdmin'));
@@ -46,17 +36,7 @@ class BookController extends Controller
 
     public function store(BookRequest $request): RedirectResponse
     {
-        $data = $request->validated();
-
-        if ($request->hasFile('cover')) {
-            $data['cover'] = $request->file('cover')->store('covers', 'public');
-        }
-
-        if (! isset($data['stok_tersedia'])) {
-            $data['stok_tersedia'] = $data['jumlah_buku'];
-        }
-
-        Book::create($data);
+        $this->bookService->createBook($request->validated() + ['cover' => $request->file('cover')]);
 
         return redirect()
             ->route('books.index')
@@ -81,16 +61,7 @@ class BookController extends Controller
 
     public function update(BookRequest $request, Book $book): RedirectResponse
     {
-        $data = $request->validated();
-
-        if ($request->hasFile('cover')) {
-            if ($book->cover) {
-                Storage::disk('public')->delete($book->cover);
-            }
-            $data['cover'] = $request->file('cover')->store('covers', 'public');
-        }
-
-        $book->update($data);
+        $this->bookService->updateBook($book, $request->validated() + ['cover' => $request->file('cover')]);
 
         return redirect()
             ->route('books.index')
@@ -99,11 +70,7 @@ class BookController extends Controller
 
     public function destroy(Book $book): RedirectResponse
     {
-        if ($book->cover) {
-            Storage::disk('public')->delete($book->cover);
-        }
-
-        $book->delete();
+        $this->bookService->deleteBook($book);
 
         return redirect()
             ->route('books.index')

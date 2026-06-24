@@ -16,8 +16,24 @@ use Illuminate\Validation\ValidationException;
 class ReturnService
 {
     public function __construct(
+        protected \App\Repositories\Interfaces\ReturnRepositoryInterface $returnRepository,
         protected FineService $fineService
     ) {}
+
+    public function getActiveBorrowings(string $search = '')
+    {
+        return $this->returnRepository->getActiveBorrowings($search);
+    }
+
+    public function getReturnLogs()
+    {
+        return $this->returnRepository->getReturnLogs();
+    }
+
+    public function getCompletedReturns()
+    {
+        return $this->returnRepository->getCompletedReturns();
+    }
 
     /**
      * @param  array<int, int>|null  $returnedQtyByDetail  [borrowing_detail_id => qty dikembalikan sekarang]
@@ -120,7 +136,7 @@ class ReturnService
                     [
                         'member_id' => $borrowing->member_id,
                         'jumlah_denda' => 0,
-                        'status_bayar' => 'belum_lunas',
+                        'status_bayar' => \App\Enums\FineStatus::BelumLunas,
                     ]
                 );
                 $fine->increment('jumlah_denda', $dendaTambahan);
@@ -141,8 +157,15 @@ class ReturnService
                     'total_denda' => $totalDenda,
                 ]);
 
-                $borrowing->update(['status' => 'selesai']);
+                $borrowing->update(['status' => \App\Enums\BorrowingStatus::Selesai]);
             }
+
+            \Illuminate\Support\Facades\Log::info('Borrowing returned', [
+                'borrowing_id' => $borrowing->id,
+                'received_by' => $receiver->id,
+                'is_fully_returned' => $isFullyReturned,
+                'total_qty_kembali' => $totalQtyKembali,
+            ]);
 
             return new ReturnProcessResult(
                 restoredBooks: $restoredBooks,

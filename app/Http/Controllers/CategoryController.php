@@ -10,16 +10,14 @@ use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
+    public function __construct(protected \App\Services\CategoryService $categoryService)
+    {
+    }
+
     public function index(Request $request): View
     {
         $search = $request->string('search')->trim();
-
-        $categories = Category::query()
-            ->withCount('books')
-            ->when($search->isNotEmpty(), fn ($q) => $q->where('nama_kategori', 'like', "%{$search}%"))
-            ->orderBy('nama_kategori')
-            ->paginate(10)
-            ->withQueryString();
+        $categories = $this->categoryService->getAllCategories($search);
 
         return view('categories.index', compact('categories', 'search'));
     }
@@ -31,7 +29,7 @@ class CategoryController extends Controller
 
     public function store(CategoryRequest $request): RedirectResponse
     {
-        Category::create($request->validated());
+        $this->categoryService->createCategory($request->validated());
 
         return redirect()
             ->route('categories.index')
@@ -45,7 +43,7 @@ class CategoryController extends Controller
 
     public function update(CategoryRequest $request, Category $category): RedirectResponse
     {
-        $category->update($request->validated());
+        $this->categoryService->updateCategory($category, $request->validated());
 
         return redirect()
             ->route('categories.index')
@@ -54,14 +52,13 @@ class CategoryController extends Controller
 
     public function destroy(Category $category): RedirectResponse
     {
-        if ($category->books()->exists()) {
-            return back()->with('error', 'Kategori tidak dapat dihapus karena masih digunakan oleh buku.');
+        try {
+            $this->categoryService->deleteCategory($category);
+            return redirect()
+                ->route('categories.index')
+                ->with('success', 'Kategori berhasil dihapus.');
+        } catch (\App\Exceptions\CategoryInUseException $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        $category->delete();
-
-        return redirect()
-            ->route('categories.index')
-            ->with('success', 'Kategori berhasil dihapus.');
     }
 }

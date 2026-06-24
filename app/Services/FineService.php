@@ -7,6 +7,9 @@ use Carbon\Carbon;
 
 class FineService
 {
+    /**
+     * @deprecated Use calculateForReturnedQty() so partial returns are fined accurately.
+     */
     public function calculate(Borrowing $borrowing, Carbon $returnDate): int
     {
         if (! $returnDate->gt($borrowing->tanggal_jatuh_tempo)) {

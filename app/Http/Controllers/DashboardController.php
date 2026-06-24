@@ -10,6 +10,7 @@ use App\Models\Member;
 use App\Models\Shelf;
 use App\Models\User;
 use App\Services\BorrowingService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -20,9 +21,13 @@ class DashboardController extends Controller
 
     public function index(): View
     {
-        $this->borrowingService->markOverdueBorrowings();
+        Cache::remember('borrowings:mark-overdue:last-run', now()->addMinute(), function () {
+            $this->borrowingService->markOverdueBorrowings();
 
-        $user = auth()->user();
+            return true;
+        });
+
+        $user = auth()->user()->loadMissing('member');
         $isAdmin = $user->isAdminLibrary();
 
         $stats = [

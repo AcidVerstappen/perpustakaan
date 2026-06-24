@@ -68,7 +68,10 @@ class Borrowing extends Model
 
     public function totalSisa(): int
     {
-        return (int) $this->details->sum(fn (BorrowingDetail $d) => $d->qtySisa());
+        return (int) $this->details->reduce(
+            fn (int $total, BorrowingDetail $detail) => $total + $detail->qtySisa(),
+            0
+        );
     }
 
     public function isFullyReturned(): bool

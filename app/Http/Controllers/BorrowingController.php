@@ -116,6 +116,7 @@ class BorrowingController extends Controller
             return back()->with('error', 'Hanya peminjaman berstatus diajukan yang dapat dihapus.');
         }
 
+        $borrowing->details()->delete();
         $borrowing->delete();
 
         return redirect()

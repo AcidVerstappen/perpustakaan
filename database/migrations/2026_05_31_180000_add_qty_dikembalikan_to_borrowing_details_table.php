@@ -13,13 +13,13 @@ return new class extends Migration
             $table->unsignedInteger('qty_dikembalikan')->default(0)->after('qty');
         });
 
-        DB::statement(
-            'UPDATE borrowing_details bd
-             INNER JOIN borrowings b ON b.id = bd.borrowing_id
-             SET bd.qty_dikembalikan = bd.qty
-             WHERE b.status = ?',
-            ['selesai']
-        );
+        DB::table('borrowing_details')
+            ->whereIn('borrowing_id', function ($query) {
+                $query->select('id')
+                    ->from('borrowings')
+                    ->where('status', 'selesai');
+            })
+            ->update(['qty_dikembalikan' => DB::raw('qty')]);
     }
 
     public function down(): void

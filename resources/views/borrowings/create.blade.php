@@ -76,8 +76,61 @@
 
 @push('scripts')
 <script>
-    const bookOptions = @json($books->map(fn($b) => ['id' => $b->id, 'label' => $b->kode_buku.' - '.$b->judul.' (stok: '.$b->stok_tersedia.')]));
+    const bookOptions = @json($books->map(fn($b) => [
+        'id' => $b->id,
+        'label' => $b->kode_buku . " - " . $b->judul . " (stok: " . $b->stok_tersedia . ")",
+        'stok' => $b->stok_tersedia
+    ]));
     let rowIndex = 1;
+
+    function syncBookSelections() {
+        const selectedValues = [];
+        const rows = document.querySelectorAll('.book-row');
+        
+        rows.forEach(row => {
+            const select = row.querySelector('select.select-search');
+            if (select && select.value) {
+                selectedValues.push({
+                    select: select,
+                    value: select.value
+                });
+            }
+        });
+
+        rows.forEach(row => {
+            const select = row.querySelector('select.select-search');
+            const qtyInput = row.querySelector('input[type="number"]');
+            
+            if (!select || !qtyInput) return;
+
+            const selectedVal = select.value;
+
+            if (selectedVal) {
+                const book = bookOptions.find(b => b.id == selectedVal);
+                if (book) {
+                    qtyInput.max = book.stok;
+                    if (parseInt(qtyInput.value) > book.stok) {
+                        qtyInput.value = book.stok;
+                    }
+                }
+            } else {
+                qtyInput.removeAttribute('max');
+            }
+
+            const ts = select.tomselect;
+            if (ts) {
+                bookOptions.forEach(book => {
+                    const shouldDisable = selectedValues.some(item => item.value == book.id && item.select !== select);
+                    const option = ts.options[book.id];
+                    if (option) {
+                        option.disabled = shouldDisable;
+                        ts.updateOption(book.id, option);
+                    }
+                });
+                ts.refreshOptions(false);
+            }
+        });
+    }
 
     document.getElementById('addBookRow').addEventListener('click', () => {
         const row = document.createElement('div');
@@ -95,6 +148,7 @@
         window.initSelectSearch(row);
         rowIndex++;
         updateRemoveButtons();
+        syncBookSelections();
     });
 
     document.getElementById('bookRows').addEventListener('click', e => {
@@ -104,6 +158,23 @@
             if (select) window.destroySelectSearch(select);
             row.remove();
             updateRemoveButtons();
+            syncBookSelections();
+        }
+    });
+
+    document.getElementById('bookRows').addEventListener('change', e => {
+        if (e.target.tagName === 'SELECT') {
+            syncBookSelections();
+        }
+    });
+
+    document.getElementById('bookRows').addEventListener('input', e => {
+        if (e.target.type === 'number') {
+            const qtyInput = e.target;
+            const max = parseInt(qtyInput.max);
+            if (max && parseInt(qtyInput.value) > max) {
+                qtyInput.value = max;
+            }
         }
     });
 
@@ -113,5 +184,9 @@
             row.querySelector('.remove-row').disabled = rows.length <= 1;
         });
     }
+
+    setTimeout(() => {
+        syncBookSelections();
+    }, 100);
 </script>
 @endpush

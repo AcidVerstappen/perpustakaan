@@ -1,31 +1,36 @@
 @php
-    $isAdmin = auth()->user()->hasAnyRole(['Super Admin', 'Admin Perpustakaan']);
-
-    $menuItems = [
-        ['route' => 'dashboard', 'icon' => 'bi-speedometer2', 'label' => 'Dashboard', 'pattern' => 'dashboard'],
-        ['route' => 'books.index', 'icon' => 'bi-book', 'label' => $isAdmin ? 'Buku' : 'Katalog Buku', 'pattern' => 'books.*'],
-        ['route' => 'borrowings.index', 'icon' => 'bi-arrow-left-right', 'label' => $isAdmin ? 'Peminjaman' : 'Riwayat Peminjaman', 'pattern' => 'borrowings.*'],
-        ['route' => 'fines.index', 'icon' => 'bi-cash-coin', 'label' => 'Denda', 'pattern' => 'fines.*'],
-    ];
-
-    if (!$isAdmin) {
-        $menuItems[] = ['route' => 'booking.cart', 'icon' => 'bi-cart', 'label' => 'Keranjang Booking', 'pattern' => 'booking.cart'];
-    }
+    $user = auth()->user();
+    $isAdmin = $user->isAdminLibrary();
+    $isPetugas = $user->isPetugas();
 
     if ($isAdmin) {
-        $adminMenus = [
-            ['route' => 'categories.index', 'icon' => 'bi-tags', 'label' => 'Kategori', 'pattern' => 'categories.*'],
-            ['route' => 'shelves.index', 'icon' => 'bi-grid-3x3-gap', 'label' => 'Rak', 'pattern' => 'shelves.*'],
-            ['route' => 'members.index', 'icon' => 'bi-people', 'label' => 'Anggota', 'pattern' => 'members.*'],
-            ['route' => 'returns.index', 'icon' => 'bi-box-arrow-in-left', 'label' => 'Pengembalian', 'pattern' => 'returns.*'],
-            ['route' => 'reports.index', 'icon' => 'bi-file-earmark-bar-graph', 'label' => 'Laporan', 'pattern' => 'reports.*'],
-            ['route' => 'qr-scan.index', 'icon' => 'bi-qr-code-scan', 'label' => 'Scan QR', 'pattern' => 'qr-scan.*'],
+        $menuItems = [
+            ['route' => 'dashboard',        'icon' => 'bi-speedometer2',          'label' => 'Dashboard',           'pattern' => 'dashboard'],
+            ['route' => 'members.index',    'icon' => 'bi-people',                'label' => 'Data Anggota',        'pattern' => 'members.*'],
+            ['route' => 'books.index',      'icon' => 'bi-book',                  'label' => 'Data Buku',           'pattern' => 'books.*'],
+            ['route' => 'categories.index', 'icon' => 'bi-tags',                  'label' => 'Data Kategori',       'pattern' => 'categories.*'],
+            ['route' => 'shelves.index',    'icon' => 'bi-grid-3x3-gap',          'label' => 'Data Rak',            'pattern' => 'shelves.*'],
+            ['route' => 'borrowings.index', 'icon' => 'bi-arrow-left-right',      'label' => 'Data Peminjaman',     'pattern' => 'borrowings.*'],
+            ['route' => 'returns.index',    'icon' => 'bi-box-arrow-in-left',     'label' => 'Data Pengembalian',   'pattern' => 'returns.*'],
+            ['route' => 'fines.index',      'icon' => 'bi-cash-coin',             'label' => 'Data Denda',          'pattern' => 'fines.*'],
+            ['route' => 'reports.index',    'icon' => 'bi-file-earmark-bar-graph','label' => 'Laporan PDF',         'pattern' => 'reports.*'],
         ];
-        $menuItems = array_merge(
-            array_slice($menuItems, 0, 2),
-            $adminMenus,
-            array_slice($menuItems, 2)
-        );
+    } elseif ($isPetugas) {
+        $menuItems = [
+            ['route' => 'dashboard',        'icon' => 'bi-speedometer2',      'label' => 'Dashboard',           'pattern' => 'dashboard'],
+            ['route' => 'members.index',    'icon' => 'bi-people',            'label' => 'Data Anggota',        'pattern' => 'members.*'],
+            ['route' => 'borrowings.index', 'icon' => 'bi-arrow-left-right',  'label' => 'Peminjaman Buku',     'pattern' => 'borrowings.*'],
+            ['route' => 'returns.index',    'icon' => 'bi-box-arrow-in-left', 'label' => 'Pengembalian Buku',   'pattern' => 'returns.*'],
+            ['route' => 'fines.index',      'icon' => 'bi-cash-coin',         'label' => 'Data Denda',          'pattern' => 'fines.*'],
+        ];
+    } else {
+        $menuItems = [
+            ['route' => 'dashboard',        'icon' => 'bi-speedometer2',      'label' => 'Dashboard',           'pattern' => 'dashboard'],
+            ['route' => 'books.index',      'icon' => 'bi-book',              'label' => 'Katalog Buku',        'pattern' => 'books.*'],
+            ['route' => 'borrowings.index', 'icon' => 'bi-arrow-left-right',  'label' => 'Riwayat Peminjaman',  'pattern' => 'borrowings.*'],
+            ['route' => 'fines.index',      'icon' => 'bi-cash-coin',         'label' => 'Denda',               'pattern' => 'fines.*'],
+            ['route' => 'booking.cart',     'icon' => 'bi-cart',              'label' => 'Keranjang Booking',   'pattern' => 'booking.cart'],
+        ];
     }
 @endphp
 
@@ -42,9 +47,10 @@
                 <i class="bi bi-person-fill"></i>
             </div>
             <div class="overflow-hidden">
-                <div class="text-white text-truncate small fw-semibold">{{ auth()->user()->name }}</div>
+                <div class="text-white text-truncate small fw-semibold">{{ $user->name }}</div>
                 <div class="text-success small">
-                    <i class="bi bi-circle-fill" style="font-size: 0.4rem;"></i> Online
+                    <i class="bi bi-circle-fill" style="font-size: 0.4rem;"></i>
+                    {{ $user->getRoleNames()->first() ?? 'User' }}
                 </div>
             </div>
         </div>

@@ -8,16 +8,25 @@ class ReturnBookRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->isAdminLibrary();
+        return $this->user()->isAdminLibrary() || $this->user()->isPetugas();
     }
 
     public function rules(): array
     {
-        return [
+        $isPetugas = $this->user()->isPetugas();
+
+        $rules = [
             'tanggal_kembali' => ['nullable', 'date'],
             'items' => ['required', 'array'],
             'items.*.qty' => ['nullable', 'integer', 'min:0'],
         ];
+
+        if ($isPetugas) {
+            $rules['kondisi_buku'] = ['required', 'in:baik,rusak,hilang'];
+            $rules['catatan_kondisi'] = ['nullable', 'string', 'max:500'];
+        }
+
+        return $rules;
     }
 
     public function withValidator($validator): void
@@ -36,6 +45,8 @@ class ReturnBookRequest extends FormRequest
     {
         return [
             'items.*.qty' => 'jumlah dikembalikan',
+            'kondisi_buku' => 'kondisi buku',
+            'catatan_kondisi' => 'catatan kondisi',
         ];
     }
 }

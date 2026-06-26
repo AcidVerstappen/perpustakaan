@@ -70,9 +70,9 @@
                                         <a href="{{ route('books.edit', $book) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <a href="{{ route('books.qr', $book) }}" class="btn btn-sm btn-outline-dark" title="Tampilkan QR" target="_blank">
+                                        <button type="button" onclick="showQrModal('{{ $book->kode_buku }}', '{{ $book->judul }}', '{{ route('books.qr', $book) }}')" class="btn btn-sm btn-outline-dark" title="Tampilkan QR">
                                             <i class="bi bi-qr-code"></i>
-                                        </a>
+                                        </button>
                                         <form action="{{ route('books.destroy', $book) }}" method="POST" class="d-inline"
                                               onsubmit="return confirm('Hapus buku ini?')">
                                             @csrf
@@ -104,4 +104,33 @@
             {{ $books->links() }}
         </div>
     </div>
+
+    <!-- QR Modal -->
+    <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="qrModalLabel">QR Code Buku</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="qrModalImage" src="" alt="QR Code" class="img-fluid border rounded mb-3" style="max-width: 200px;">
+                    <div class="fw-bold" id="qrModalKode"></div>
+                    <div class="small text-muted" id="qrModalJudul"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
+
+@push('scripts')
+<script>
+    function showQrModal(kode, judul, url) {
+        document.getElementById('qrModalKode').innerText = kode;
+        document.getElementById('qrModalJudul').innerText = judul;
+        document.getElementById('qrModalImage').src = url;
+        var myModal = new bootstrap.Modal(document.getElementById('qrModal'));
+        myModal.show();
+    }
+</script>
+@endpush

@@ -26,8 +26,35 @@
                     @else
                         <span class="badge text-bg-danger fs-6">Stok Habis</span>
                     @endif
+
+                    @if ($isAdmin)
+                        <div class="mt-3">
+                            <button type="button" onclick="showQrModal()" class="btn btn-outline-dark btn-sm">
+                                <i class="bi bi-qr-code me-1"></i> Tampilkan QR Code
+                            </button>
+                        </div>
+                    @endif
                 </div>
             </div>
+
+            @if ($isAdmin)
+            <!-- QR Modal -->
+            <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="qrModalLabel">QR Code Buku</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="{{ route('books.qr', $book) }}" alt="QR Code" class="img-fluid border rounded mb-3" style="max-width: 200px;">
+                            <div class="fw-bold">{{ $book->kode_buku }}</div>
+                            <div class="small text-muted">{{ $book->judul }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
         <div class="col-md-8">
             <div class="card border-0 shadow-sm">
@@ -63,3 +90,14 @@
         </div>
     </div>
 @endsection
+
+@if ($isAdmin)
+@push('scripts')
+<script>
+    function showQrModal() {
+        var myModal = new bootstrap.Modal(document.getElementById('qrModal'));
+        myModal.show();
+    }
+</script>
+@endpush
+@endif

@@ -36,6 +36,16 @@ class DashboardService
             'fines_total' => Fine::where('status_bayar', \App\Enums\FineStatus::BelumLunas)->sum('jumlah_denda'),
         ];
 
+        // Petugas-specific operational stats
+        if ($user->isPetugas()) {
+            $today = now()->toDateString();
+            $stats['borrowings_today'] = Borrowing::whereDate('tanggal_pinjam', $today)->count();
+            $stats['returns_today'] = \App\Models\BookReturn::whereDate('tanggal_kembali', $today)->count();
+            $stats['pending_approvals'] = Borrowing::where('status', \App\Enums\BorrowingStatus::Diajukan)->count();
+            $stats['overdue_count'] = Borrowing::where('status', \App\Enums\BorrowingStatus::Terlambat)->count();
+            $stats['unpaid_fines_total'] = Fine::where('status_bayar', \App\Enums\FineStatus::BelumLunas)->sum('jumlah_denda');
+        }
+
         if ($user->hasRole('Siswa') && $user->member) {
             $memberId = $user->member->id;
             $stats['my_borrowings'] = Borrowing::where('member_id', $memberId)->count();

@@ -24,14 +24,15 @@ class BorrowingService
 
     public function generateKodePinjam(): string
     {
-        $prefix = 'PJ-'.now()->format('Ymd');
-        $last = Borrowing::where('kode_pinjam', 'like', $prefix.'%')
+        $prefix = 'PJ-' . now()->format('Ymd');
+        $last = Borrowing::where('kode_pinjam', 'like', $prefix . '%')
+            ->lockForUpdate()
             ->orderByDesc('kode_pinjam')
             ->value('kode_pinjam');
 
         $sequence = $last ? ((int) substr($last, -4)) + 1 : 1;
 
-        return $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+        return $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
     }
 
     public function create(Member $member, array $items, ?User $processor = null): Borrowing

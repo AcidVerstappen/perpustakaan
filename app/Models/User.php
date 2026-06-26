@@ -41,6 +41,11 @@ class User extends Authenticatable
 
     public function isAdminLibrary(): bool
     {
-        return $this->hasAnyRole(['Super Admin', 'Admin Perpustakaan']);
+        return $this->hasRole('Super Admin');
+    }
+
+    public function isPetugas(): bool
+    {
+        return $this->hasRole('Petugas');
     }
 }

@@ -122,6 +122,7 @@
                             <th class="ps-4">Kode Pinjam</th>
                             <th>Anggota</th>
                             <th>Tgl Selesai</th>
+                            <th>Kondisi</th>
                             <th>Denda</th>
                             <th class="pe-4">Petugas</th>
                         </tr>
@@ -132,6 +133,24 @@
                                 <td class="ps-4"><code>{{ $return->borrowing->kode_pinjam }}</code></td>
                                 <td class="text-nowrap">{{ $return->borrowing->member->nama }}</td>
                                 <td class="text-nowrap">{{ $return->tanggal_kembali->format('d/m/Y') }}</td>
+                                <td>
+                                    @if ($return->kondisi_buku)
+                                        @php
+                                            $kondisiBadge = match($return->kondisi_buku) {
+                                                'baik' => 'text-bg-success',
+                                                'rusak' => 'text-bg-warning',
+                                                'hilang' => 'text-bg-danger',
+                                                default => 'text-bg-secondary',
+                                            };
+                                        @endphp
+                                        <span class="badge {{ $kondisiBadge }}">{{ ucfirst($return->kondisi_buku) }}</span>
+                                        @if ($return->catatan_kondisi)
+                                            <br><small class="text-muted">{{ Str::limit($return->catatan_kondisi, 40) }}</small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted small">-</span>
+                                    @endif
+                                </td>
                                 <td class="text-nowrap">
                                     @if($return->total_denda > 0)
                                         <span class="text-danger fw-bold">Rp{{ number_format($return->total_denda, 0, ',', '.') }}</span>
@@ -142,7 +161,7 @@
                                 <td class="pe-4 text-nowrap">{{ $return->receiver->name }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="text-center text-muted py-5">Belum ada peminjaman yang lunas dikembalikan.</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-5">Belum ada peminjaman yang lunas dikembalikan.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

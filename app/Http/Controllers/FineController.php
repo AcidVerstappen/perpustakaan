@@ -32,7 +32,7 @@ class FineController extends Controller
             'fines' => $fines,
             'search' => $search,
             'status' => $status,
-            'isAdmin' => $user->isAdminLibrary(),
+            'isAdmin' => $user->isAdminLibrary() || $user->isPetugas(),
             'noMember' => $noMember,
             'totalBelumLunas' => $totalBelumLunas,
         ]);
@@ -46,7 +46,7 @@ class FineController extends Controller
 
         return view('fines.show', [
             'fine' => $fine,
-            'isAdmin' => auth()->user()->isAdminLibrary(),
+            'isAdmin' => auth()->user()->isAdminLibrary() || auth()->user()->isPetugas(),
         ]);
     }
 
@@ -64,7 +64,7 @@ class FineController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->isAdminLibrary()) {
+        if ($user->isAdminLibrary() || $user->isPetugas()) {
             return;
         }
 

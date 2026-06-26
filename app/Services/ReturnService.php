@@ -42,9 +42,11 @@ class ReturnService
         Borrowing $borrowing,
         User $receiver,
         ?Carbon $returnDate = null,
-        ?array $returnedQtyByDetail = null
+        ?array $returnedQtyByDetail = null,
+        ?string $kondisiBuku = null,
+        ?string $catatanKondisi = null
     ): ReturnProcessResult {
-        return DB::transaction(function () use ($borrowing, $receiver, $returnDate, $returnedQtyByDetail) {
+        return DB::transaction(function () use ($borrowing, $receiver, $returnDate, $returnedQtyByDetail, $kondisiBuku, $catatanKondisi) {
             $borrowing = Borrowing::query()
                 ->with(['details.book', 'bookReturn', 'fine'])
                 ->lockForUpdate()
@@ -140,6 +142,11 @@ class ReturnService
                     ]
                 );
                 $fine->increment('jumlah_denda', $dendaTambahan);
+
+                // Reset status bayar jika sebelumnya sudah lunas (ada denda baru)
+                if ($fine->status_bayar === \App\Enums\FineStatus::Lunas) {
+                    $fine->update(['status_bayar' => \App\Enums\FineStatus::BelumLunas]);
+                }
             }
 
             $borrowing->refresh()->load('details');
@@ -155,6 +162,8 @@ class ReturnService
                     'received_by' => $receiver->id,
                     'tanggal_kembali' => $returnDate,
                     'total_denda' => $totalDenda,
+                    'kondisi_buku' => $kondisiBuku,
+                    'catatan_kondisi' => $catatanKondisi,
                 ]);
 
                 $borrowing->update(['status' => \App\Enums\BorrowingStatus::Selesai]);

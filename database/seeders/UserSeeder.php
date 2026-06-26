@@ -24,12 +24,12 @@ class UserSeeder extends Seeder
         $petugas = User::updateOrCreate(
             ['email' => 'petugas@perpus.test'],
             [
-                'name' => 'Admin Perpustakaan',
+                'name' => 'Petugas',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
             ]
         );
-        $petugas->syncRoles(['Admin Perpustakaan']);
+        $petugas->syncRoles(['Petugas']);
 
         $siswa = User::updateOrCreate(
             ['email' => 'siswa@perpus.test'],

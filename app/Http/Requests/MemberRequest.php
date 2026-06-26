@@ -9,7 +9,7 @@ class MemberRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->hasAnyRole(['Super Admin', 'Admin Perpustakaan']);
+        return $this->user()->hasRole('Super Admin');
     }
 
     public function rules(): array

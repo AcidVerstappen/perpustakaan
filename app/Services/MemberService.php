@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\BorrowingStatus;
 use App\Models\Member;
 use App\Models\User;
 use App\Repositories\Interfaces\MemberRepositoryInterface;
@@ -79,6 +80,20 @@ class MemberService
 
     public function deleteMember(Member $member): bool
     {
+        $activeCount = $member->borrowings()
+            ->whereIn('status', [
+                BorrowingStatus::Diajukan,
+                BorrowingStatus::Dipinjam,
+                BorrowingStatus::Terlambat,
+            ])
+            ->count();
+
+        if ($activeCount > 0) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'member' => 'Anggota tidak dapat dihapus karena masih memiliki peminjaman aktif.',
+            ]);
+        }
+
         return DB::transaction(function () use ($member) {
             if ($member->foto) {
                 Storage::disk('public')->delete($member->foto);

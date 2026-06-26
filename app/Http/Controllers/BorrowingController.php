@@ -9,6 +9,7 @@ use App\Models\Member;
 use App\Services\BorrowingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class BorrowingController extends Controller
@@ -19,7 +20,10 @@ class BorrowingController extends Controller
 
     public function index(Request $request): View
     {
-        $this->borrowingService->markOverdueBorrowings();
+        Cache::remember('borrowings:mark-overdue:last-run', now()->addMinute(), function () {
+            $this->borrowingService->markOverdueBorrowings();
+            return true;
+        });
 
         $search = $request->string('search')->trim();
         $status = $request->string('status')->toString();
@@ -32,11 +36,13 @@ class BorrowingController extends Controller
             $noMember = !$user->member;
         }
 
+        $isStaff = $user->isAdminLibrary() || $user->isPetugas();
+
         return view('borrowings.index', [
             'borrowings' => $borrowings,
             'search' => $search,
             'status' => $status,
-            'isAdmin' => $user->isAdminLibrary(),
+            'isAdmin' => $isStaff,
             'noMember' => $noMember,
         ]);
     }
@@ -72,7 +78,7 @@ class BorrowingController extends Controller
 
         return view('borrowings.show', [
             'borrowing' => $borrowing,
-            'isAdmin' => auth()->user()->isAdminLibrary(),
+            'isAdmin' => auth()->user()->isAdminLibrary() || auth()->user()->isPetugas(),
         ]);
     }
 
@@ -120,7 +126,7 @@ class BorrowingController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->isAdminLibrary()) {
+        if ($user->isAdminLibrary() || $user->isPetugas()) {
             return;
         }
 

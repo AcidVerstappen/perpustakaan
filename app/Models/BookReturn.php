@@ -14,6 +14,8 @@ class BookReturn extends Model
         'received_by',
         'tanggal_kembali',
         'total_denda',
+        'kondisi_buku',
+        'catatan_kondisi',
     ];
 
     protected function casts(): array

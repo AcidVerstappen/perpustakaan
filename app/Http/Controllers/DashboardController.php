@@ -23,13 +23,14 @@ class DashboardController extends Controller
     {
         $user = auth()->user()->loadMissing('member');
         $isAdmin = $user->isAdminLibrary();
+        $isPetugas = $user->isPetugas();
 
         $stats = $this->dashboardService->getStats($user, $isAdmin);
         $recentBooks = $this->dashboardService->getRecentBooks();
         $recentMembers = $this->dashboardService->getRecentMembers();
         $recentBorrowings = $this->dashboardService->getRecentBorrowings($user);
         $lowStockBooks = $this->dashboardService->getLowStockBooks($isAdmin);
-        $overdueBorrowings = $this->dashboardService->getOverdueBorrowings($isAdmin);
+        $overdueBorrowings = $this->dashboardService->getOverdueBorrowings($isAdmin || $isPetugas);
 
         return view('dashboard', compact(
             'stats',
@@ -38,7 +39,8 @@ class DashboardController extends Controller
             'recentBorrowings',
             'lowStockBooks',
             'overdueBorrowings',
-            'isAdmin'
+            'isAdmin',
+            'isPetugas'
         ));
     }
 }

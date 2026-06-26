@@ -52,17 +52,22 @@ class BookBookingController extends Controller
 
     public function checkout(Request $request)
     {
+        $member = $request->user()->member;
+        if (! $member) {
+            return back()->with('error', 'Profil anggota Anda belum lengkap. Hubungi petugas perpustakaan.');
+        }
+
         $cart = $request->session()->get('booking_cart', []);
         if (empty($cart)) {
             return back()->with('error', 'Keranjang booking kosong.');
         }
 
         $items = [];
-        foreach($cart as $bookId => $qty) {
+        foreach ($cart as $bookId => $qty) {
             $items[] = ['book_id' => $bookId, 'qty' => $qty];
         }
 
-        $this->borrowingService->create($request->user()->member, $items);
+        $this->borrowingService->create($member, $items);
 
         $request->session()->forget('booking_cart');
 

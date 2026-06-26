@@ -21,7 +21,7 @@ class BookController extends Controller
     {
         $search = $request->string('search')->trim();
         $books = $this->bookService->getAllBooks($search);
-        $isAdmin = $request->user()->hasAnyRole(['Super Admin', 'Admin Perpustakaan']);
+        $isAdmin = $request->user()->hasRole('Super Admin');
 
         return view('books.index', compact('books', 'search', 'isAdmin'));
     }
@@ -46,7 +46,7 @@ class BookController extends Controller
     public function show(Book $book): View
     {
         $book->load(['category', 'shelf']);
-        $isAdmin = auth()->user()->hasAnyRole(['Super Admin', 'Admin Perpustakaan']);
+        $isAdmin = auth()->user()->hasRole('Super Admin');
 
         return view('books.show', compact('book', 'isAdmin'));
     }

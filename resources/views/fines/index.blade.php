@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Denda')
-@section('page-title', 'Data Denda')
+@section('title', $isAdmin ? 'Denda' : 'Denda Saya')
+@section('page-title', $isAdmin ? 'Data Denda' : 'Data Denda Saya')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
@@ -27,6 +27,7 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white"><h5 class="mb-0">Daftar Denda</h5></div>
         <div class="card-body">
+            @if ($isAdmin)
             <form method="GET" class="row g-2 mb-3">
                 <div class="col-md-4">
                     <input type="search" name="search" class="form-control" placeholder="Cari nama / NIS..." value="{{ $search }}">
@@ -42,6 +43,20 @@
                     <button type="submit" class="btn btn-success">Filter</button>
                 </div>
             </form>
+            @else
+            <form method="GET" class="row g-2 mb-3">
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">Semua Status</option>
+                        <option value="belum_lunas" @selected($status === 'belum_lunas')>Belum Lunas</option>
+                        <option value="lunas" @selected($status === 'lunas')>Lunas</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-success">Filter</button>
+                </div>
+            </form>
+            @endif
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle">

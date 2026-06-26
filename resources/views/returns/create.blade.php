@@ -104,6 +104,35 @@
                             Jika masih ada sisa, peminjaman tetap aktif sampai semua buku kembali.
                         </div>
 
+                        @if ($isPetugas ?? false)
+                        <div class="card border-0 bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3"><i class="bi bi-clipboard-check me-1"></i> Validasi Kondisi Buku</h6>
+                                <div class="mb-3">
+                                    <label for="kondisi_buku" class="form-label fw-medium">Kondisi Buku <span class="text-danger">*</span></label>
+                                    <select name="kondisi_buku" id="kondisi_buku" class="form-select @error('kondisi_buku') is-invalid @enderror" required>
+                                        <option value="">-- Pilih Kondisi --</option>
+                                        <option value="baik" @selected(old('kondisi_buku') === 'baik')>Baik</option>
+                                        <option value="rusak" @selected(old('kondisi_buku') === 'rusak')>Rusak</option>
+                                        <option value="hilang" @selected(old('kondisi_buku') === 'hilang')>Hilang</option>
+                                    </select>
+                                    @error('kondisi_buku')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="mb-0">
+                                    <label for="catatan_kondisi" class="form-label fw-medium">Catatan Kondisi</label>
+                                    <textarea name="catatan_kondisi" id="catatan_kondisi" rows="3"
+                                              class="form-control @error('catatan_kondisi') is-invalid @enderror"
+                                              placeholder="Catat kerusakan atau kehilangan buku (opsional)...">{{ old('catatan_kondisi') }}</textarea>
+                                    @error('catatan_kondisi')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <button type="submit" class="btn btn-success w-100"
                                 onclick="return confirm('Proses pengembalian buku?')">
                             <i class="bi bi-check-lg"></i> Konfirmasi Pengembalian

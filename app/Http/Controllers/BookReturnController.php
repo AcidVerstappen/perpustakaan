@@ -7,6 +7,7 @@ use App\Models\Borrowing;
 use App\Services\BorrowingService;
 use App\Services\ReturnService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class BookReturnController extends Controller
@@ -19,7 +20,11 @@ class BookReturnController extends Controller
     public function index(): View
     {
         $request = request();
-        $this->borrowingService->markOverdueBorrowings();
+
+        Cache::remember('borrowings:mark-overdue:last-run', now()->addMinute(), function () {
+            $this->borrowingService->markOverdueBorrowings();
+            return true;
+        });
 
         $search = $request->string('search')->trim();
 
@@ -39,8 +44,9 @@ class BookReturnController extends Controller
         }
 
         $borrowing->load(['member', 'details.book', 'returnLogs']);
+        $isPetugas = auth()->user()->isPetugas();
 
-        return view('returns.create', compact('borrowing'));
+        return view('returns.create', compact('borrowing', 'isPetugas'));
     }
 
     public function store(ReturnBookRequest $request, Borrowing $borrowing): RedirectResponse
@@ -63,7 +69,9 @@ class BookReturnController extends Controller
             $borrowing,
             $request->user(),
             $returnDate,
-            $returnedQtyByDetail
+            $returnedQtyByDetail,
+            $request->input('kondisi_buku'),
+            $request->input('catatan_kondisi')
         );
 
         $stockSummary = collect($result->restoredBooks)

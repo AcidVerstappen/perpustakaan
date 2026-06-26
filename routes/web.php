@@ -27,14 +27,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('borrowings', [BorrowingController::class, 'index'])->name('borrowings.index');
     Route::get('fines', [FineController::class, 'index'])->name('fines.index');
 
-    Route::middleware(['role:Super Admin|Admin Perpustakaan'])->group(function () {
-        Route::get('books/create', [BookController::class, 'create'])->name('books.create');
-        Route::post('books', [BookController::class, 'store'])->name('books.store');
-        Route::get('books/{book}/edit', [BookController::class, 'edit'])->name('books.edit');
-        Route::put('books/{book}', [BookController::class, 'update'])->name('books.update');
-        Route::patch('books/{book}', [BookController::class, 'update']);
-        Route::delete('books/{book}', [BookController::class, 'destroy'])->name('books.destroy');
-
+    Route::middleware(['role:Super Admin|Petugas'])->group(function () {
         Route::get('borrowings/create', [BorrowingController::class, 'create'])->name('borrowings.create');
         Route::post('borrowings', [BorrowingController::class, 'store'])->name('borrowings.store');
         Route::delete('borrowings/{borrowing}', [BorrowingController::class, 'destroy'])->name('borrowings.destroy');
@@ -46,18 +39,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('returns', [BookReturnController::class, 'index'])->name('returns.index');
         Route::get('returns/create/{borrowing}', [BookReturnController::class, 'create'])->name('returns.create');
         Route::post('returns/{borrowing}', [BookReturnController::class, 'store'])->name('returns.store');
+    });
+
+    // Petugas: read-only access to members
+    Route::middleware(['role:Super Admin|Petugas'])->group(function () {
+        Route::get('members', [MemberController::class, 'index'])->name('members.index');
+    });
+
+    // Super Admin only — master data & system management
+    Route::middleware(['role:Super Admin'])->group(function () {
+        Route::get('books/create', [BookController::class, 'create'])->name('books.create');
+        Route::post('books', [BookController::class, 'store'])->name('books.store');
+        Route::get('books/{book}/edit', [BookController::class, 'edit'])->name('books.edit');
+        Route::put('books/{book}', [BookController::class, 'update'])->name('books.update');
+        Route::patch('books/{book}', [BookController::class, 'update']);
+        Route::delete('books/{book}', [BookController::class, 'destroy'])->name('books.destroy');
 
         Route::post('fines/{fine}/pay', [FineController::class, 'pay'])->name('fines.pay');
 
         Route::resource('categories', CategoryController::class)->except(['show']);
         Route::resource('shelves', ShelfController::class)->except(['show']);
-        Route::resource('members', MemberController::class)->except(['show']);
+        Route::resource('members', MemberController::class)->except(['show', 'index']);
 
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/books/pdf', [ReportController::class, 'books'])->name('reports.books');
         Route::get('reports/members/pdf', [ReportController::class, 'members'])->name('reports.members');
         Route::get('reports/borrowings/pdf', [ReportController::class, 'borrowings'])->name('reports.borrowings');
-        Route::get('reports/fines/pdf', [ReportController::class, 'fines'])->name('reports.fines');
         Route::get('reports/fines/pdf', [ReportController::class, 'fines'])->name('reports.fines');
 
         Route::get('books/{book}/qr', [BookQrController::class, 'show'])->name('books.qr');
